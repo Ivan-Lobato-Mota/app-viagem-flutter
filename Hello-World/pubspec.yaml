@@ -8,7 +8,8 @@ environment:
   sdk: ^3.0.0
 
 dependencies:
-  firebase_core: ^4.15.0
+  cloud_firestore: ^7.1.0
+  firebase_core: ^5.1.0
   flutter:
     sdk: flutter
   # Workaround: firebase_core_web 3.12.0 forgot to declare this dependency

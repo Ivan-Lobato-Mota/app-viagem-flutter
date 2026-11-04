@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807305195988",
+    "project_id": "appviagens-5a3d2",
+    "storage_bucket": "appviagens-5a3d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807305195988:android:441f2728a7a0e309986641",
+        "android_client_info": {
+          "package_name": "com.example.helloworld"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAe-BxvOrYn6X6wlvpHL4fokD5z9zOn84o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
