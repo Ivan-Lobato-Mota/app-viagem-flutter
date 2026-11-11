@@ -1,0 +1,3 @@
+android/.gradle/*
+.dart_tool/*
+.env

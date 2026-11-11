@@ -1,5 +1,6 @@
+
 import 'package:flutter/material.dart';
-import 'dados_destino.dart';
+import 'dados_destinos.dart';
 
 class DetalhesPage extends StatelessWidget {
   final String cidade;
@@ -36,7 +37,9 @@ class DetalhesPage extends StatelessWidget {
         // Dados recebidos do Firebase
         final dados = snapshot.data!;
 
-        final atracoes = dados['atracoes'] ;
+        // Destinos cadastrados pelo formulário não possuem atrações.
+        final atracoes = (dados['atracoes'] as List?) ?? [];
+        final imagem = dados['imagem']?.toString() ?? '';
 
         return Scaffold(
           appBar: AppBar(
@@ -50,9 +53,14 @@ class DetalhesPage extends StatelessWidget {
             child: Column(
               children: [
 
-                Image.asset(dados['img'] ?? ''),
+                if (imagem.isNotEmpty)
+                  Image.asset(
+                    imagem,
+                    errorBuilder: (context, erro, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
 
-                Text(dados['estado']),
+                Text(dados['estado']?.toString() ?? ''),
 
                 const Text(
                   'Sobre o destino',
@@ -117,5 +125,3 @@ class DetalhesPage extends StatelessWidget {
     );
   }
 }
-
-

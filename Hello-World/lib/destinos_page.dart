@@ -1,160 +1,188 @@
 import 'package:flutter/material.dart';
 import 'dados_destinos.dart';
 import 'detalhes_page.dart';
+import 'form_destino_page.dart';
 
 class DestinosPage extends StatefulWidget {
   const DestinosPage({super.key});
 
-  State<DestinosPage> createState()=>_DestinosPageState();
+  @override
+  State<DestinosPage> createState() => _DestinosPageState();
 }
 
-class _DestinosPageState extends State<DestinosPage>{
-  String filtro='';
-
+class _DestinosPageState extends State<DestinosPage> {
+  String filtro = '';
   late Future<List<Map<String, dynamic>>> futureDestinos;
-  void initState(){
+
+  @override
+  void initState() {
     super.initState();
-    futureDestinos=listarDestinos();
+    futureDestinos = listarDestinos();
   }
 
+  void _recarregar() {
+    setState(() {
+      futureDestinos = listarDestinos();
+    });
+  }
+
+  Future<void> _abrirFormulario({
+    String? id,
+    Map<String, dynamic>? destino,
+  }) async {
+    final salvou = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormDestinoPage(id: id, destino: destino),
+      ),
+    );
+
+    if (!mounted) return;
+    if (salvou == true) {
+      _recarregar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Destino salvo com sucesso!')),
+      );
+    }
+  }
+
+  Future<void> _confirmarExclusao(String id, String nome) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir destino?'),
+        content: Text('Deseja realmente excluir $nome?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmado != true) return;
+
+    try {
+      await excluirDestino(id);
+      if (!mounted) return;
+      _recarregar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Destino excluído com sucesso!')),
+      );
+    } catch (erro) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir: $erro')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-          return Scaffold(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Destinos'),
+        centerTitle: true,
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _abrirFormulario(),
+        icon: const Icon(Icons.add),
+        label: const Text('Novo destino'),
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: futureDestinos,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Erro ao buscar destinos: ${snapshot.error}'));
+          }
 
-            appBar: AppBar(
-              title: Text('Destinos'),
-              centerTitle: true,
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
+          final destinos = List<Map<String, dynamic>>.from(snapshot.data ?? []);
+          destinos.sort((a, b) => (a['nome'] ?? '')
+              .toString()
+              .toLowerCase()
+              .compareTo((b['nome'] ?? '').toString().toLowerCase()));
 
-            body:
-            FutureBuilder<List<Map<String, dynamic>>>(
-                future: listarDestinos(),
-                builder: (context, snapshot) {
+          final filtrados = destinos.where((destino) =>
+              (destino['nome'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(filtro.toLowerCase())).toList();
 
-                  // Dados não encontrados
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Scaffold(
-                      body: Center(
-                        child: Text('Não há destinos'),
-                      ),
-                    );
-                  }
-
-                  final destinos = List<Map<String, dynamic>>.from(
-                    snapshot.data!,
-                  );
-
-                  destinos.sort((a, b) {
-                    String nomeA = (a['nome']).toString();
-                    String nomeB = (b['nome']).toString();
-                    return nomeA.toLowerCase().compareTo(
-                      nomeB.toLowerCase(),
-                    );
-                  });
-
-                  final destinosFiltrados = destinos.where((destino) {
-                    String nome = (destino['nome'])
-                        .toString()
-                        .toLowerCase();
-                    return nome.contains(filtro.toLowerCase());
-                  }).toList();
-
-                  return Padding(
-                    padding: const EdgeInsets.all(15),
-
-                    child: Column(
-                      children: [
-
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Pesquisar cidade...',
-                            prefixIcon: Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+          return Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Pesquisar cidade...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (valor) => setState(() => filtro = valor),
+                ),
+                const SizedBox(height: 15),
+                Expanded(
+                  child: filtrados.isEmpty
+                      ? const Center(child: Text('Nenhum destino encontrado'))
+                      : ListView.builder(
+                    itemCount: filtrados.length,
+                    itemBuilder: (context, index) {
+                      final destino = filtrados[index];
+                      final id = destino['id'].toString();
+                      final nome = destino['nome']?.toString() ?? '';
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.location_city,
+                            color: Colors.blue,
+                            size: 36,
+                          ),
+                          title: Text(nome),
+                          subtitle: Text(destino['estado']?.toString() ?? ''),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DetalhesPage(cidade: id),
                             ),
                           ),
-                          onChanged: (valor) {
-                            setState(() {
-                              filtro = valor;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 15),
-
-                        Expanded(
-                          child: destinosFiltrados.isEmpty ?
-                          Center(
-                            child: Text('Nenhuma cidade encontrada'),
-                          ) : ListView.builder(
-                            itemCount: destinosFiltrados.length,
-                            itemBuilder: (context, index) {
-                              final destino = destinosFiltrados[index];
-
-                              return Card(
-                                child: Padding(
-                                  padding: EdgeInsets.all(15),
-
-                                  child: Row(
-                                    children: [
-
-                                      Icon(
-                                        Icons.location_city,
-                                        size: 60,
-                                        color: Colors.blue,
-                                      ),
-
-                                      SizedBox(width: 15),
-
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment
-                                              .start,
-                                          children: [
-
-                                            Text(
-                                              destino['nome'],
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-
-                                            Text(
-                                              destino['estado'],
-                                            ),
-
-                                          ],
-                                        ),
-                                      ),
-
-                                      IconButton(
-                                        icon: Icon(Icons.arrow_forward_ios),
-
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    DetalhesPage(
-                                                      cidade: destino['id'],
-                                                    )
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Editar',
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _abrirFormulario(
+                                  id: id,
+                                  destino: destino,
                                 ),
-                              );
-                            },
+                              ),
+                              IconButton(
+                                tooltip: 'Excluir',
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _confirmarExclusao(id, nome),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           );
+        },
+      ),
+    );
   }
 }
