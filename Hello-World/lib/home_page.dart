@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'destinos_page.dart';
+import 'dicas_page.dart';
 
 class HomePage extends StatelessWidget{
   const HomePage({super.key});
@@ -58,6 +59,23 @@ class HomePage extends StatelessWidget{
                     );
                   },
                   child: Text('Ver destinos'),
+                ),
+              ),
+              SizedBox(
+                height: 12,
+              ),
+              SizedBox(
+                width: 220,
+                child: ElevatedButton(
+                  onPressed: (){
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context)=>const DicasPage(),
+                      ),
+                    );
+                  },
+                  child: Text('Dicas de viagem'),
                 ),
               ),
             ],
